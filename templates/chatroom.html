@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chatroom</title>
+    <style>
+        body {
+            background-color: black;
+            color: green;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        #chat-messages {
+            padding: 20px;
+            overflow-y: scroll;
+            max-height: 70vh;
+            text-align: left; /* Align messages to the left */
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        #message-input {
+            width: 70%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        #send-button {
+            width: 25%;
+            padding: 10px;
+            background-color: green;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #message-input-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Welcome to the Chatroom</h1>
+    <div id="chat-messages">
+        <!-- Chat messages will be displayed here -->
+    </div>
+    <div id="message-input-container">
+    <input type="text" id="message-input" placeholder="Type your message...">
+    <button id="send-button">Send</button>
+</div>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chatMessages = document.getElementById('chat-messages');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+
+    // Create an audio element for the message sound
+    const messageSound = new Audio('alert.mp3');
+
+    // Add event listener to the input field for Enter key press
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent line break in the input field
+            sendButton.click(); // Trigger the button click event
+            messageSound.play(); // Play the message sound
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to the bottom
+        }
+    });
+
+    sendButton.addEventListener('click', () => {
+        const message = messageInput.value;
+        if (message.trim() !== '') {
+            // Send the message to the server using AJAX
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/send-message', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // Clear the input field after sending the message
+                    messageInput.value = '';
+                }
+            };
+            xhr.send(JSON.stringify({ message }));
+
+            messageSound.play(); // Play the message sound
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Scroll to the bottom
+        }
+    });
+
+    // Periodically fetch new messages from the server using AJAX
+    const fetchMessages = () => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', '/fetch-messages', true);
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                const messages = JSON.parse(xhr.responseText);
+                chatMessages.innerHTML = ''; // Clear previous messages
+                messages.forEach(message => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.classList.add('message');
+                    messageDiv.innerHTML = `<strong>${message.sender}:</strong> ${message.text}`;
+                    chatMessages.appendChild(messageDiv);
+                });
+
+                // Scroll to the bottom after updating messages
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        };
+        xhr.send();
+    };
+
+    // Fetch messages every 2 seconds (adjust as needed)
+    setInterval(fetchMessages, 2000);
+});
+    </script>
+</body>
+</html>
